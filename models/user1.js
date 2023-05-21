@@ -50,6 +50,7 @@ module.exports = (sequelize, Sequelize) => {
     lastname: {
       type: Sequelize.STRING,
     },
+    createdAt: { type: Date, default: Date.now },
   });
 
   return User;

@@ -11,6 +11,7 @@ module.exports = (sequelize, Sequelize) => {
     color: {
       type: Sequelize.STRING,
     },
+    createdAt: { type: Date, default: Date.now },
   });
 
   return Team;

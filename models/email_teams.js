@@ -11,6 +11,7 @@ module.exports = (sequelize, Sequelize) => {
     email: {
       type: Sequelize.INTEGER,
     },
+    createdAt: { type: Date, default: Date.now },
   })
   return Email_teams;
 };

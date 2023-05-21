@@ -8,6 +8,7 @@ module.exports = (sequelize, Sequelize) => {
     emailScan: {
       type: Sequelize.DATE,
     },
+    createdAt: { type: Date, default: Date.now },
   })
   return Setting;
 };

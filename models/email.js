@@ -65,6 +65,7 @@ module.exports = (sequelize, Sequelize) => {
     mainId: {
       type: Sequelize.STRING,
     },
+    createdAt: { type: Date, default: Date.now },
   })
   return Email;
 };
