@@ -5,11 +5,9 @@ const emailTeamSchema = new mongoose.Schema(
     name: {
       type: String,
     },
-    email: {
-      type: Number,
-    },
+    email: { type: mongoose.Schema.Types.ObjectId, ref: 'Esetting' },
   },
-  { toJSON: { virtuals: true }, toObject: { virtuals: true } }
+  { toJSON: { virtuals: true }, toObject: { virtuals: true },timestamps: true }
 );
 
 emailTeamSchema.virtual("id").get(function () {

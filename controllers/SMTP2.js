@@ -126,7 +126,6 @@ function revieceFile() {
   imap.connect();
 }
 
-
 async function basefunction() {
   const serverInfo = await ESettingModel.find({ status: 1 });
 
@@ -367,7 +366,6 @@ exports.getservice = async (req, res, next) => {
   res.send({ data: mails, total: total.length > 0 ? total[0].cnt : 0 });
 };
 
-
 exports.receiveEmail = async (req, res, next) => {
   try {
     const serverInfo = await UserModel.aggregate([
@@ -380,7 +378,7 @@ exports.receiveEmail = async (req, res, next) => {
         $lookup: {
           from: "emailteams",
           localField: "team",
-          foreignField: "id",
+          foreignField: "_id",
           as: "team_info",
         },
       },
@@ -391,7 +389,7 @@ exports.receiveEmail = async (req, res, next) => {
         $lookup: {
           from: "esettings",
           localField: "team_info.email",
-          foreignField: "id",
+          foreignField: "_id",
           as: "server_info",
         },
       },
@@ -424,18 +422,23 @@ exports.receiveEmail = async (req, res, next) => {
             ],
           },
         },
-        {
-          $group: {
-            _id: "$mainId",
-            email: { $last: "$email" },
-            mainId: { $last: "$mainId" },
-            subject: { $last: "$subject" },
-            message: { $last: "$message" },
-            createdAt: { $last: "$createdAt" },
-          },
-        },
+        // {
+        //   $group: {
+        //     _id: "$mainId",
+        //     email: { $last: "$email" },
+        //     mainId: { $last: "$mainId" },
+        //     subject: { $last: "$subject" },
+        //     message: { $last: "$message" },
+        //     createdAt: { $last: "$createdAt" },
+        //   },
+        // },
         {
           $sort: { createdAt: -1 },
+        },
+        {
+          $addFields: {
+            id: "$_id",
+          },
         },
         {
           $skip: (req.body.page - 1) * req.body.perpage,
@@ -481,18 +484,23 @@ exports.receiveEmail = async (req, res, next) => {
             ],
           },
         },
-        {
-          $group: {
-            _id: "$mainId",
-            email: { $last: "$email" },
-            mainId: { $last: "$mainId" },
-            subject: { $last: "$subject" },
-            message: { $last: "$message" },
-            createdAt: { $last: "$createdAt" },
-          },
-        },
+        // {
+        //   $group: {
+        //     _id: "$mainId",
+        //     email: { $last: "$email" },
+        //     mainId: { $last: "$mainId" },
+        //     subject: { $last: "$subject" },
+        //     message: { $last: "$message" },
+        //     createdAt: { $last: "$createdAt" },
+        //   },
+        // },
         {
           $sort: { createdAt: -1 },
+        },
+        {
+          $addFields: {
+            id: "$_id",
+          },
         },
         {
           $skip: (req.body.page - 1) * req.body.perpage,
@@ -529,27 +537,53 @@ exports.receiveEmail = async (req, res, next) => {
           $match: {
             hostname: serverInfo[0]?.email,
             category: 1,
-            fromEmail: email,
+            accept: email,
+          },
+        },
+        {
+          $match: {
             $or: [
-              { subject: { $regex: search, $options: "i" } },
-              { message: { $regex: search, $options: "i" } },
-              { toEmail: { $regex: search, $options: "i" } },
+              {
+                subject: { $regex: search, $options: "i" }
+              },
+              {
+                message: { $regex: search, $options: "i" }
+              },
+              {
+                fromEmail: { $regex: search, $options: "i" }
+              },
             ],
           },
         },
+        // {
+        //   $group: {
+        //     _id: "$mainId",
+        //     max_createdAt: {
+        //       $max: "$createdAt",
+        //     },
+        //   },
+        // },
+        // {
+        //   $lookup: {
+        //     from: "emails",
+        //     localField: "_id",
+        //     foreignField: "mainId",
+        //     as: "emails",
+        //   },
+        // },
+        // {
+        //   $unwind: "$emails",
+        // },
+        // {
+        //   $replaceRoot: {
+        //     newRoot: "$emails",
+        //   },
+        // },
         {
-          $group: {
-            _id: "$mainId",
-            email: { $last: "$email" },
-            mainId: { $last: "$mainId" },
-            subject: { $last: "$subject" },
-            message: { $last: "$message" },
-            createdAt: { $last: "$createdAt" },
+            $addFields: {
+              id: "$_id",
+            },
           },
-        },
-        {
-          $sort: { createdAt: -1 },
-        },
         {
           $skip: (req.body.page - 1) * req.body.perpage,
         },
@@ -563,12 +597,11 @@ exports.receiveEmail = async (req, res, next) => {
           $match: {
             hostname: serverInfo[0]?.email,
             category: 1,
-            fromEmail: email,
             $or: [
-              { subject: { $regex: search, $options: "i" } },
-              { message: { $regex: search, $options: "i" } },
-              { toEmail: { $regex: search, $options: "i" } },
-            ],
+                { subject: { $regex: search, $options: "i" } },
+                { message: { $regex: search, $options: "i" } },
+                { fromEmail: { $regex: search, $options: "i" } },
+              ],
           },
         },
         {
@@ -580,114 +613,166 @@ exports.receiveEmail = async (req, res, next) => {
       ]);
 
       res.json({ data: mails, count: count.length > 0 ? count[0].count : 0 });
-    } else if (category === "drafts") {
-      const mails = await EmailModel.aggregate([
-        {
-          $match: {
-            hostname: serverInfo[0]?.email,
-            category: 2,
-            fromEmail: email,
-            $or: [
-              { subject: { $regex: search, $options: "i" } },
-              { message: { $regex: search, $options: "i" } },
-            ],
-          },
-        },
-        {
-          $group: {
-            _id: "$mainId",
-            email: { $last: "$email" },
-            mainId: { $last: "$mainId" },
-            subject: { $last: "$subject" },
-            message: { $last: "$message" },
-            createdAt: { $last: "$createdAt" },
-          },
-        },
-        {
-          $sort: { createdAt: -1 },
-        },
-        {
-          $skip: (req.body.page - 1) * req.body.perpage,
-        },
-        {
-          $limit: req.body.perpage,
-        },
-      ]);
-
-      const count = await EmailModel.aggregate([
-        {
-          $match: {
-            hostname: serverInfo[0]?.email,
-            category: 2,
-            fromEmail: email,
-            $or: [
-              { subject: { $regex: search, $options: "i" } },
-              { message: { $regex: search, $options: "i" } },
-            ],
-          },
-        },
-        {
-          $group: {
-            _id: "$mainId",
-            count: { $sum: 1 },
-          },
-        },
-      ]);
+    } else if (category === "important") {
+        const mails = await EmailModel.aggregate([
+            {
+              $match: {
+                hostname: serverInfo[0]?.email,
+                isImportant: true
+              },
+            },
+            {
+              $match: {
+                $or: [
+                  {
+                    subject: { $regex: search, $options: "i" }
+                  },
+                  {
+                    message: { $regex: search, $options: "i" }
+                  },
+                  {
+                    fromEmail: { $regex: search, $options: "i" }
+                  },
+                ],
+              },
+            },
+            // {
+            //   $group: {
+            //     _id: "$mainId",
+            //     max_createdAt: {
+            //       $max: "$createdAt",
+            //     },
+            //   },
+            // },
+            // {
+            //   $lookup: {
+            //     from: "emails",
+            //     localField: "_id",
+            //     foreignField: "mainId",
+            //     as: "emails",
+            //   },
+            // },
+            // {
+            //   $unwind: "$emails",
+            // },
+            // {
+            //   $replaceRoot: {
+            //     newRoot: "$emails",
+            //   },
+            // },
+            {
+                $addFields: {
+                  id: "$_id",
+                },
+              },
+            {
+              $skip: (req.body.page - 1) * req.body.perpage,
+            },
+            {
+              $limit: req.body.perpage,
+            },
+          ]);
+        
+        const count = await EmailModel.aggregate([
+            {
+              $match: {
+                hostname: serverInfo[0]?.email,
+                isImportant: true,
+                $or: [
+                    { subject: { $regex: search, $options: "i" } },
+                    { message: { $regex: search, $options: "i" } },
+                    { fromEmail: { $regex: search, $options: "i" } },
+                  ],
+              },
+            },
+            {
+              $group: {
+                _id: "$mainId",
+                count: { $sum: 1 },
+              },
+            },
+          ]);
 
       res.json({ data: mails, count: count.length > 0 ? count[0].count : 0 });
-    } else if (category === "sent") {
-      const mails = await EmailModel.aggregate([
-        {
-          $match: {
-            hostname: serverInfo[0]?.email,
-            category: 1,
-            fromEmail: email,
-            $or: [
-              { subject: { $regex: search, $options: "i" } },
-              { message: { $regex: search, $options: "i" } },
-            ],
-          },
-        },
-        {
-          $group: {
-            _id: "$mainId",
-            email: { $last: "$email" },
-            mainId: { $last: "$mainId" },
-            subject: { $last: "$subject" },
-            message: { $last: "$message" },
-            createdAt: { $last: "$createdAt" },
-          },
-        },
-        {
-          $sort: { createdAt: -1 },
-        },
-        {
-          $skip: (req.body.page - 1) * req.body.perpage,
-        },
-        {
-          $limit: req.body.perpage,
-        },
-      ]);
-
-      const count = await EmailModel.aggregate([
-        {
-          $match: {
-            hostname: serverInfo[0]?.email,
-            category: 1,
-            fromEmail: email,
-            $or: [
-              { subject: { $regex: search, $options: "i" } },
-              { message: { $regex: search, $options: "i" } },
-            ],
-          },
-        },
-        {
-          $group: {
-            _id: "$mainId",
-            count: { $sum: 1 },
-          },
-        },
-      ]);
+    } else if (category === "starred") {
+        const mails = await EmailModel.aggregate([
+            {
+              $match: {
+                hostname: serverInfo[0]?.email,
+                isStarred: true
+              },
+            },
+            {
+              $match: {
+                $or: [
+                  {
+                    subject: { $regex: search, $options: "i" }
+                  },
+                  {
+                    message: { $regex: search, $options: "i" }
+                  },
+                  {
+                    fromEmail: { $regex: search, $options: "i" }
+                  },
+                ],
+              },
+            },
+            // {
+            //   $group: {
+            //     _id: "$mainId",
+            //     max_createdAt: {
+            //       $max: "$createdAt",
+            //     },
+            //   },
+            // },
+            // {
+            //   $lookup: {
+            //     from: "emails",
+            //     localField: "_id",
+            //     foreignField: "mainId",
+            //     as: "emails",
+            //   },
+            // },
+            // {
+            //   $unwind: "$emails",
+            // },
+            // {
+            //   $replaceRoot: {
+            //     newRoot: "$emails",
+            //   },
+            // },
+            {
+                $addFields: {
+                  id: "$_id",
+                },
+              },
+            {
+              $skip: (req.body.page - 1) * req.body.perpage,
+            },
+            {
+              $limit: req.body.perpage,
+            },
+          ]);
+        
+        const count = await EmailModel.aggregate([
+            {
+              $match: {
+                hostname: serverInfo[0]?.email,
+                isStarred: true,
+                $or: [
+                    { subject: { $regex: search, $options: "i" } },
+                    { message: { $regex: search, $options: "i" } },
+                    { fromEmail: { $regex: search, $options: "i" } },
+                  ],
+              },
+            },
+            {
+              $group: {
+                _id: "$mainId",
+                count: { $sum: 1 },
+              },
+            },
+          ]);
 
       res.json({ data: mails, count: count.length > 0 ? count[0].count : 0 });
     } else {
@@ -697,8 +782,6 @@ exports.receiveEmail = async (req, res, next) => {
     next(error);
   }
 };
-
-
 
 exports.detailEmail = async (req, res, next) => {
   try {
@@ -738,7 +821,6 @@ exports.sendemailById = async (req, res, next) => {
   }
 };
 
-
 exports.updateImportant = async (req, res, next) => {
   try {
     const result = await EmailModel.findByIdAndUpdate(req.body.id, {
@@ -750,7 +832,6 @@ exports.updateImportant = async (req, res, next) => {
   }
 };
 
-
 exports.getEmailById = async (req, res, next) => {
   try {
     const result = await EmailModel.findOne({ _id: req.params.id });
@@ -759,8 +840,6 @@ exports.getEmailById = async (req, res, next) => {
     next(error);
   }
 };
-
-
 
 exports.updateStarred = async (req, res, next) => {
   try {
@@ -773,7 +852,6 @@ exports.updateStarred = async (req, res, next) => {
     res.status(500).send({ error: "Failed to update starred email" });
   }
 };
-
 
 exports.getLabels = async (req, res, next) => {
   var labels = [
@@ -788,23 +866,23 @@ exports.getLabels = async (req, res, next) => {
   ];
 
   try {
-    const inboxCount = await EmailModel.countDocuments({ category: 0 });
+    const inboxCount = await EmailModel.count({ category: 0 });
     labels[1].unreadCount = inboxCount;
 
-    const sentCount = await EmailModel.countDocuments({ category: 1 });
+    const sentCount = await EmailModel.count({ category: 1 });
     labels[2].unreadCount = sentCount;
 
-    const acceptedCount = await EmailModel.countDocuments({
+    const acceptedCount = await EmailModel.count({
       accept: { $ne: "" },
     });
     labels[5].unreadCount = acceptedCount;
 
-    const repliedCount = await EmailModel.countDocuments({
+    const repliedCount = await EmailModel.count({
       reply: { $ne: "" },
     });
     labels[6].unreadCount = repliedCount;
 
-    const totalCount = await EmailModel.countDocuments();
+    const totalCount = await EmailModel.count();
     labels[0].unreadCount = totalCount;
 
     const fromEmailCount = await EmailModel.aggregate([
@@ -823,8 +901,6 @@ exports.getLabels = async (req, res, next) => {
   res.send({ val: labels });
 };
 
-
-
 exports.deleteEmailByID = async (req, res, next) => {
   try {
     await EmailModel.findByIdAndDelete(req.body.id);
@@ -833,8 +909,6 @@ exports.deleteEmailByID = async (req, res, next) => {
     next(error);
   }
 };
-
-
 
 exports.acceptEmailById = async (req, res, next) => {
   try {
@@ -845,7 +919,9 @@ exports.acceptEmailById = async (req, res, next) => {
     } else {
       result.accept = req.body.staff;
       result.acceptDate = new Date();
-      await result.save();
+      // await result.save();
+      const response = await EmailModel.updateOne({_id : result._id},{ $set : result})
+      console.log("response -->", response);
       res.send({ flag: "success" });
     }
   } catch (error) {
@@ -854,8 +930,6 @@ exports.acceptEmailById = async (req, res, next) => {
   }
 };
 
-
-
 exports.rejectEmailById = async (req, res, next) => {
   const result = await EmailModel.findOne({ _id: req.body.id });
   result.accept = "";
@@ -863,8 +937,6 @@ exports.rejectEmailById = async (req, res, next) => {
   await result.save();
   res.send({ flag: "success" });
 };
-
-
 
 exports.addemailTeam = async (req, res, next) => {
   try {
@@ -876,20 +948,15 @@ exports.addemailTeam = async (req, res, next) => {
   }
 };
 
-
 exports.getemailTeam = async function (req, res, next) {
   const result = await EmailTeamModel.find();
   res.send({ result: result });
 };
 
-
-
 exports.getemailTeamByid = async function (req, res, next) {
   const result = await EmailTeamModel.findById(req.body.id);
   res.send({ result: result });
 };
-
-
 
 exports.updatemailTeamById = async function (req, res, next) {
   try {
@@ -906,8 +973,6 @@ exports.updatemailTeamById = async function (req, res, next) {
   }
 };
 
-
-
 exports.deletemailTeam = async (req, res, next) => {
   try {
     await EmailTeamModel.deleteOne({ _id: req.body.id });
@@ -917,8 +982,6 @@ exports.deletemailTeam = async (req, res, next) => {
   }
 };
 
-
-
 exports.getEmailTeams = async function (req, res, next) {
   try {
     const result = await EmailTeamModel.find({});
@@ -927,8 +990,6 @@ exports.getEmailTeams = async function (req, res, next) {
     next(error);
   }
 };
-
-
 
 exports.changeEsettingById = async (req, res, next) => {
   try {
@@ -941,8 +1002,6 @@ exports.changeEsettingById = async (req, res, next) => {
     next(error);
   }
 };
-
-
 
 exports.addemail = async (req, res, next) => {
   try {
@@ -959,7 +1018,6 @@ exports.addemail = async (req, res, next) => {
   }
 };
 
-
 exports.getemail = async function (req, res, next) {
   try {
     const result = await ESettingModel.find({});
@@ -970,10 +1028,9 @@ exports.getemail = async function (req, res, next) {
   }
 };
 
-
 exports.deletemail = async function (req, res, next) {
   try {
-    const result = await ESettingModel.findOneAndDelete({ _id: req.body.id });
+    const result = await ESettingModel.findByIdAndRemove({ _id: req.body.id });
 
     if (!result) {
       return res.status(404).send({ error: "Email not found" });
@@ -984,8 +1041,6 @@ exports.deletemail = async function (req, res, next) {
     next(error);
   }
 };
-
-
 
 exports.getemailsByid = async function (req, res, next) {
   try {
@@ -1000,8 +1055,6 @@ exports.getemailsByid = async function (req, res, next) {
     next(error);
   }
 };
-
-
 
 exports.updatemailById = async function (req, res, next) {
   try {
@@ -1024,7 +1077,6 @@ exports.updatemailById = async function (req, res, next) {
   }
 };
 
-
 exports.getHostings = async (req, res, next) => {
   try {
     const result = await ESettingModel.find({});
@@ -1033,8 +1085,6 @@ exports.getHostings = async (req, res, next) => {
     next(error);
   }
 };
-
-
 
 exports.getRepliedEmailById = async (req, res, next) => {
   try {
@@ -1055,22 +1105,22 @@ exports.getRepliedEmailById = async (req, res, next) => {
           },
         },
         { $unwind: "$user" },
-        {
-          $project: {
-            _id: 1,
-            mainId: 1,
-            subject: 1,
-            body: 1,
-            createdAt: 1,
-            username: "$user.username",
-          },
-        },
+        // {
+        //   $project: {
+        //     _id: 1,
+        //     mainId: 1,
+        //     subject: 1,
+        //     body: 1,
+        //     createdAt: 1,
+        //     username: "$user.username",
+        //   },
+        // },
       ]);
     } else {
       flag = false;
       result = await EmailModel.find(
         { mainId: main.mainId },
-        { _id: 1, mainId: 1, subject: 1, body: 1, createdAt: 1 }
+        // { _id: 1, mainId: 1, subject: 1, body: 1, createdAt: 1 }
       );
     }
 
@@ -1079,8 +1129,6 @@ exports.getRepliedEmailById = async (req, res, next) => {
     next(error);
   }
 };
-
-
 
 exports.mailAnalyse = async (req, res, next) => {
   try {

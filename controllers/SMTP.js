@@ -1,6 +1,7 @@
 const nodemailer = require("nodemailer");
 const UserModel = require("../mongooseModels/UserSchema");
 const ESettingModel = require("../mongooseModels/ESettingSchema");
+const EmailModel = require("../mongooseModels/EmailSchema");
 
 exports.sendEmail = async (req, res, next) => {
   try {
@@ -10,7 +11,7 @@ exports.sendEmail = async (req, res, next) => {
         $lookup: {
           from: "emailteams",
           localField: "team",
-          foreignField: "id",
+          foreignField: "_id",
           as: "email_team",
         },
       },
@@ -19,7 +20,7 @@ exports.sendEmail = async (req, res, next) => {
         $lookup: {
           from: "esettings",
           localField: "email_team.email",
-          foreignField: "id",
+          foreignField: "_id",
           as: "esetting",
         },
       },
@@ -104,26 +105,30 @@ exports.sendEmail = async (req, res, next) => {
 };
 
 exports.sendEmail0 = async (req, res, next) => {
+  console.log(req.body)
   try {
-    const serverInfo = await ESettingModel.aggregate([
-      {
-        $lookup: {
-          from: "emailteams",
-          localField: "_id",
-          foreignField: "email",
-          as: "teams",
+    console.log(req.body.email);
+    const serverInfo = await UserModel.aggregate([
+        { $match: { email: req.body.email } },
+        { $lookup: {
+            from: 'emailteams',
+            localField: 'team',
+            foreignField: '_id',
+            as: 'team_info'
+          }
         },
-      },
-      {
-        $match: {
-          "teams.email": req.body.email,
+        { $unwind: '$team_info' },
+        { $lookup: {
+            from: 'esettings',
+            localField: 'team_info.email',
+            foreignField: '_id',
+            as: 'esettings_info'
+          }
         },
-      },
-      {
-        $limit: 1,
-      },
-    ]);
-
+        { $unwind: '$esettings_info' },
+        { $replaceRoot: { newRoot: '$esettings_info' } }
+      ]);
+      console.log("serverinfo --->",serverInfo);
     if (!serverInfo.length) {
       return res.status(400).json({
         success: false,
@@ -157,7 +162,7 @@ exports.sendEmail0 = async (req, res, next) => {
 
     const info = await transporter.sendMail(mailOptions);
 
-    const email = new Email({
+    const email = new EmailModel({
       fromName: req.body.senderName,
       fromEmail: serverInfo[0].email,
       toName: "",

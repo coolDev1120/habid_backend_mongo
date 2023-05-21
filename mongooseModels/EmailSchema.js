@@ -19,13 +19,13 @@ const emailSchema = new Schema({
     type: String,
   },
   isImportant: {
-    type: String,
+    type: Boolean,
   },
   isStarred: {
-    type: String,
+    type: Boolean,
   },
   isUnread: {
-    type: String,
+    type: Boolean,
   },
   labelIds: {
     type: String,
@@ -44,6 +44,7 @@ const emailSchema = new Schema({
   },
   accept: {
     type: String,
+    default :"",
   },
   parentID: {
     type: Number,
@@ -66,6 +67,7 @@ const emailSchema = new Schema({
 }, {
   toJSON: { virtuals: true },
   toObject: { virtuals: true },
+  timestamps: true
 });
 
 emailSchema.virtual('id').get(function () {

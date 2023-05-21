@@ -38,9 +38,7 @@ const UserSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   },
-  team: {
-    type: String
-  },
+  team: { type: mongoose.Schema.Types.ObjectId, ref: 'EmailTeam' },
   permissions: {
     type: String
   },
@@ -52,7 +50,8 @@ const UserSchema = new mongoose.Schema({
   }
 }, {
     toJSON: { virtuals: true },
-    toObject: { virtuals: true }
+    toObject: { virtuals: true },
+    timestamps: true
   });
 
 // define virtual field 'id' which will return '_id' as 'id'

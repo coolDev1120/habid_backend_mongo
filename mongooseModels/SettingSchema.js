@@ -8,6 +8,7 @@ const settingSchema = new Schema({
 }, {
   toJSON: { virtuals: true },
   toObject: { virtuals: true },
+  timestamps: true
 });
 
 settingSchema.virtual('event_id').get(function () {

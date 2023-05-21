@@ -207,7 +207,7 @@ exports.deleteAccount = async function (req, res, next) {
 exports.getAccountById = async function (req, res, next) {
 	try {
 		const result = await UserModel.findById(req.body.id);
-		res.send({ data: result });
+		res.send({ data: [result] });
 	} catch (err) {
 		console.log(err);
 	}
@@ -216,13 +216,13 @@ exports.getAccountById = async function (req, res, next) {
 exports.updateAccountById = async function (req, res, next) {
 	console.log(req.body);
 	var update = {
-		username: req.body.username,
-		team: req.body.team,
-		phone: req.body.phone,
-		accountype: req.body.accountype,
-		staff: req.body.staff,
-		dateAdded: req.body.dateAdded,
-		role: req.body.role,
+		username: req.body.username ? req.body.username : '',
+		team: req.body.team ? req.body.team : '',
+		phone: req.body.phone ? req.body.phone : '',
+		accountype: req.body.accountype ? req.body.accountype : '',
+		staff: req.body.staff ? req.body.staff : '',
+		dateAdded: req.body.dateAdded ? req.body.dateAdded : '',
+		role: req.body.role ? req.body.role : '',	
 	};
 	if (req.body.colourCode) {
 		update.colourCode = req.body.colourCode;
@@ -230,7 +230,7 @@ exports.updateAccountById = async function (req, res, next) {
 	if (req.body.password) {
 		update.password = md5(req.body.password);
 	}
-	const result1 = await UserModel.findOne({ username: req.body.username });
+	const result1 = await UserModel.findOne({ username: req.body.username , email: { $ne: req.body.email }  });
 	if (result1) {
 		return res.send({ flag: "failed", message: "Username is in use" });
 	} else {
@@ -239,8 +239,7 @@ exports.updateAccountById = async function (req, res, next) {
 		if (!result1) {
 			return res.send({ flag: "failed", message: "User not found" });
 		}
-
-		result1.update(update);
+		const response = await UserModel.updateOne({_id : result1._id},{ $set : update})
 		res.send({ flag: "success" });
 	}
 };

@@ -24,6 +24,7 @@ const esettingSchema = new Schema({
 }, {
   toJSON: { virtuals: true },
   toObject: { virtuals: true },
+  timestamps: true
 });
 
 esettingSchema.virtual('id').get(function () {

@@ -31,7 +31,8 @@ const eventSchema = new mongoose.Schema({
   },
   toObject: {
     virtuals: true
-  }
+  },
+  timestamps: true
 });
 
 eventSchema.virtual('event_id').get(function () {
