@@ -70,7 +70,8 @@ exports.sendEmail = async (req, res, next) => {
         });
         return;
       } else {
-        const selected = await Email.findOne({ id: req.body.id });
+        const selected = await EmailModel.findOne({ _id: req.body.id });
+        console.log("selecteddd ---> ", selected);
         const params = {
           fromName: req.body.senderName,
           fromEmail: selected.toEmail,
@@ -85,10 +86,10 @@ exports.sendEmail = async (req, res, next) => {
           messageId: info.messageId,
           mainId: selected.mainId,
           hostname: selected.hostname,
+          reply: new Date() 
         };
         console.log("param", params);
-        await Email.create(params);
-        await selected.update({ reply: new Date() });
+        await EmailModel.create(params);
         res.json({
           success: true,
           flag: "success",

@@ -1050,7 +1050,7 @@ exports.getemailsByid = async function (req, res, next) {
       return res.status(404).send({ error: "Email not found" });
     }
 
-    res.send({ data: result });
+    res.send({ data: [result] });
   } catch (error) {
     next(error);
   }
@@ -1137,6 +1137,7 @@ exports.mailAnalyse = async (req, res, next) => {
       {
         $group: {
           _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+          dd : { $first: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } } },
           cnt: { $sum: 1 },
         },
       },
@@ -1149,6 +1150,7 @@ exports.mailAnalyse = async (req, res, next) => {
       {
         $group: {
           _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+          dd : { $first: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } } },
           cnt: { $sum: 1 },
         },
       },

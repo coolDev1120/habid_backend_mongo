@@ -23,7 +23,6 @@ module.exports = (sequelize, Sequelize) => {
     status: {
       type: Sequelize.INTEGER,
     },
-    createdAt: { type: Date, default: Date.now },
   })
   return Esetting;
 };

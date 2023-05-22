@@ -46,9 +46,7 @@ const emailSchema = new Schema({
     type: String,
     default :"",
   },
-  parentID: {
-    type: Number,
-  },
+  parentID: { type: Schema.Types.ObjectId, ref: 'Email' },
   inReplyTo: {
     type: String,
   },

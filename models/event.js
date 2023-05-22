@@ -29,7 +29,6 @@ module.exports = (sequelize, Sequelize) => {
     title: {
       type: Sequelize.STRING,
     },
-    createdAt: { type: Date, default: Date.now },
   });
 
   return Event;

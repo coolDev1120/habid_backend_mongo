@@ -68,7 +68,6 @@ module.exports = (sequelize, Sequelize) => {
     where_find: {
       type: Sequelize.STRING,
     },
-    createdAt: { type: Date, default: Date.now },
   });
 
   return Contact;
